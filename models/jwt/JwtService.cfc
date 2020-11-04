@@ -338,8 +338,9 @@ component accessors="true" singleton {
 	 *
 	 * @returns The payload for convenience
 	 */
-	struct function parseToken(){
-		var jwtToken = discoverToken();
+	struct function parseToken( string token, boolean auth=true, boolean checkStorage=true ){
+
+		var jwtToken = arguments.token ?: discoverToken();
 
 		// Did we find an incoming token
 		if ( !len( jwtToken ) ) {
@@ -348,7 +349,7 @@ component accessors="true" singleton {
 			}
 
 			throw(
-				message = "Token not found in authorization header or the custom header or the request collection",
+				message = "Token was not passed in and was not found in the authorization header, custom header or the request collection",
 				type    = "TokenNotFoundException"
 			);
 		}
@@ -407,7 +408,7 @@ component accessors="true" singleton {
 		}
 
 		// Verify that this token has not been invalidated in the storage?
-		if ( variables.settings.jwt.tokenStorage.enabled && !getTokenStorage().exists( decodedToken.jti )  ) {
+		if ( arguments.checkStorage && variables.settings.jwt.tokenStorage.enabled && !getTokenStorage().exists( decodedToken.jti )  ) {
 			if ( variables.log.canWarn() ) {
 				variables.log.warn( "Token rejected, it was not found in token storage", decodedToken );
 			}
@@ -450,9 +451,11 @@ component accessors="true" singleton {
 				payload : decodedToken
 			}
 		);
-
-		// Authenticate the payload
-		authenticate();
+		
+		if ( arguments.auth ){
+			// Authenticate the payload
+			authenticate();
+		}
 
 		// Return it
 		return decodedToken;
